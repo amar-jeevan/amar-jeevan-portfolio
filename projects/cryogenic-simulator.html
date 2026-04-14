@@ -5,64 +5,222 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cryogenic Cable Simulator | Amar Jeevan</title>
   <link rel="stylesheet" href="../style.css" />
+  <style>
+    /* ── Code block styling ── */
+    .code-block {
+      background: #0f1117;
+      border-radius: 8px;
+      padding: 1.4rem 1.6rem;
+      overflow-x: auto;
+      margin: 1.2rem 0;
+    }
+    .code-block pre {
+      margin: 0;
+      font-family: 'Fira Mono', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 0.82rem;
+      line-height: 1.65;
+      color: #e2e8f0;
+    }
+    .tok-kw   { color: #bb86fc; }
+    .tok-fn   { color: #69d2e7; }
+    .tok-str  { color: #a8d8a8; }
+    .tok-num  { color: #f4a261; }
+    .tok-cm   { color: #718096; font-style: italic; }
+    .tok-bi   { color: #f6c90e; }
+
+    .code-caption {
+      font-size: 0.78rem;
+      color: #888;
+      margin-top: -0.6rem;
+      margin-bottom: 1rem;
+    }
+
+    /* ── Architecture diagram ── */
+    .arch-diagram {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-wrap: wrap;
+      margin: 1.2rem 0;
+      font-size: 0.82rem;
+    }
+    .arch-box {
+      background: var(--card-bg, #f8f9fa);
+      border: 1.5px solid var(--accent, #12345a);
+      border-radius: 6px;
+      padding: 0.55rem 0.9rem;
+      text-align: center;
+      min-width: 110px;
+    }
+    .arch-box .label { font-weight: 600; font-size: 0.78rem; }
+    .arch-box .sub   { font-size: 0.70rem; color: #666; margin-top: 2px; }
+    .arch-arrow {
+      font-size: 1.2rem;
+      color: var(--accent, #12345a);
+      padding: 0 6px;
+    }
+    .ip-note {
+      border-left: 3px solid #f4a261;
+      background: #fff8f2;
+      padding: 0.75rem 1rem;
+      border-radius: 0 6px 6px 0;
+      font-size: 0.85rem;
+      color: #555;
+      margin: 1.2rem 0;
+    }
+  </style>
 </head>
 <body>
   <header class="hero">
     <div class="container hero-content">
-      <p class="tag">Featured Engineering Project</p>
+      <p class="tag">Engineering Project</p>
       <h1>Cryogenic Cable Simulator</h1>
-      <p class="subtitle">Thermal Modeling | Python | Numerical Methods</p>
+      <p class="subtitle">Thermal Modeling &middot; Python &middot; Nonlinear Numerical Methods</p>
       <p class="intro">
-        A physics-based simulation framework developed to analyze heat conduction in cryogenic
-        cable systems under realistic cooling power constraints.
+        A physics-based, two-stage simulation framework for steady-state thermal analysis
+        of cryogenic cable systems under realistic cooling power constraints.
+        Developed as a master's thesis project at Forschungszentrum J&uuml;lich (PGI-4),
+        supervised by Prof.&nbsp;Dr.-Ing.&nbsp;Philipp Keil (OTH Regensburg).
       </p>
     </div>
   </header>
 
   <main class="container">
+
     <section class="section">
-      <h2>Project Context</h2>
+      <h2>Engineering Problem</h2>
       <p>
-        This project was developed in the context of my Master’s thesis at Forschungszentrum Jülich.
-        The engineering problem was to evaluate thermal behavior in cryogenic cable systems where
-        material properties vary strongly with temperature and the available cooling power is limited.
+        Cryogenic cable systems for quantum computing infrastructure span a wide temperature
+        range -- from room temperature down to the millikelvin regime. Material thermal
+        conductivity varies by several orders of magnitude across this range, making
+        straightforward linear analysis unreliable. At the same time, the cryocooler
+        cooling capacity is finite and temperature-dependent: if the conductive heat load
+        through the cables exceeds what the cooler can extract at a given stage, the system
+        runs away rather than reaching a stable operating point.
+      </p>
+      <p>
+        The task was to build a simulation framework that could find the actual equilibrium
+        temperatures across a two-stage cryogenic architecture -- accounting for nonlinear
+        material behaviour, realistic cooler curves, and cascaded thermal boundaries --
+        and flexible enough for systematic parameter studies across materials and cable counts.
       </p>
     </section>
 
     <section class="section">
-      <h2>Engineering Objective</h2>
+      <h2>System Architecture</h2>
       <p>
-        The goal was to build a reusable simulation framework capable of estimating temperature profiles,
-        thermal loads, and realistic operating points in multi-segment cryogenic cable architectures.
-        The model needed to be flexible enough for parameter studies and technically structured enough
-        to support future validation work.
+        The model represents a two-stage cryostat (Stage&nbsp;1 ~50--75&nbsp;K,
+        Stage&nbsp;2 ~4--12&nbsp;K) with multi-segment cables connecting warm and cold ends.
+        Each stage has its own cooling power curve and parasitic offset load. The solver
+        finds the equilibrium temperatures where conductive heat load equals available
+        cooling capacity at each stage.
+      </p>
+      <div class="arch-diagram">
+        <div class="arch-box">
+          <div class="label">Warm end</div>
+          <div class="sub">T = 300 K</div>
+        </div>
+        <div class="arch-arrow">&#8594;</div>
+        <div class="arch-box">
+          <div class="label">Stage 1</div>
+          <div class="sub">~50--75 K<br>Cryocooler curve</div>
+        </div>
+        <div class="arch-arrow">&#8594;</div>
+        <div class="arch-box">
+          <div class="label">Stage 2</div>
+          <div class="sub">~4--12 K<br>Cryocooler curve</div>
+        </div>
+        <div class="arch-arrow">&#8594;</div>
+        <div class="arch-box">
+          <div class="label">Cold end</div>
+          <div class="sub">mK regime</div>
+        </div>
+      </div>
+      <p>
+        The parametric sweep covered six materials (Copper RRR=20, OFHC Copper RRR=50,
+        Beryllium Copper, 304 Stainless Steel, Fe-9Ni Nickel Steel, Kevlar&nbsp;49) and
+        six cable bundle sizes (N&nbsp;=&nbsp;1, 5, 10, 20, 35, 50), producing 36 operating
+        points per material with automatic runaway detection.
       </p>
     </section>
 
     <section class="section">
-      <h2>What I Implemented</h2>
-      <div class="grid">
-        <div class="card">
-          <h3>Physics-Based Modeling</h3>
-          <p>
-            Implemented Fourier heat conduction with temperature-dependent material behavior for
-            engineering-relevant thermal analysis.
-          </p>
-        </div>
+      <h2>Methodology</h2>
 
-        <div class="card">
-          <h3>Numerical Solution Methods</h3>
-          <p>
-            Built nonlinear steady-state solution workflows using numerical integration and iterative methods.
-          </p>
-        </div>
+      <h3>Temperature-dependent conductivity k(T)</h3>
+      <p>
+        Each material uses a dedicated analytical model fitted to published cryogenic data.
+        The dominant model is the NIST log-polynomial, where thermal conductivity is
+        expressed as a polynomial in log<sub>10</sub>(T). Other models include the OFHC
+        rational-function fit, the Kevlar error-function blend, and a power-law fallback.
+        Model selection and coefficient lookup are driven entirely by the material table --
+        no model code changes when adding a new material.
+      </p>
 
-        <div class="card">
-          <h3>System-Level Architecture</h3>
-          <p>
-            Modeled multi-segment cable systems with cascaded thermal boundaries and cooling constraints.
-          </p>
-        </div>
+      <div class="code-block"><pre><span class="tok-cm"># k(T) dispatcher -- selects model from material coefficient table</span>
+<span class="tok-kw">def</span> <span class="tok-fn">k_of_T</span>(T, row):
+    T     = <span class="tok-fn">clamp_T</span>(T)            <span class="tok-cm"># enforce physical range [1 mK, 500 K]</span>
+    model = <span class="tok-fn">str</span>(row[<span class="tok-str">'Model'</span>]).<span class="tok-fn">strip</span>().<span class="tok-fn">lower</span>()
+
+    <span class="tok-kw">if</span> model == <span class="tok-str">"logpoly"</span>:        <span class="tok-cm"># NIST log-polynomial -- most materials</span>
+        coeffs = [<span class="tok-fn">float</span>(row[c]) <span class="tok-kw">for</span> c <span class="tok-kw">in</span> [<span class="tok-str">'a'</span>,<span class="tok-str">'b'</span>,<span class="tok-str">'c'</span>,<span class="tok-str">'d'</span>,<span class="tok-str">'e'</span>,<span class="tok-str">'f'</span>,<span class="tok-str">'g'</span>,<span class="tok-str">'h'</span>,<span class="tok-str">'i'</span>]
+                   <span class="tok-kw">if not</span> pd.isna(row[c])]
+        logT = <span class="tok-bi">np</span>.log10(T)
+        poly = <span class="tok-fn">sum</span>(coeffs[j] * (logT ** j) <span class="tok-kw">for</span> j <span class="tok-kw">in</span> <span class="tok-fn">range</span>(<span class="tok-fn">len</span>(coeffs)))
+        <span class="tok-kw">return</span> <span class="tok-num">10</span> ** poly
+
+    <span class="tok-kw">elif</span> model == <span class="tok-str">"ofhc"</span>:         <span class="tok-cm"># NIST rational fit for OFHC copper</span>
+        a,b,c,d,e,f,g,h,i = [<span class="tok-fn">float</span>(row[x]) <span class="tok-kw">for</span> x <span class="tok-kw">in</span> [<span class="tok-str">'a'</span>,<span class="tok-str">'b'</span>,<span class="tok-str">'c'</span>,<span class="tok-str">'d'</span>,<span class="tok-str">'e'</span>,<span class="tok-str">'f'</span>,<span class="tok-str">'g'</span>,<span class="tok-str">'h'</span>,<span class="tok-str">'i'</span>]]
+        num = a + c*T**<span class="tok-num">0.5</span> + e*T + g*T**<span class="tok-num">1.5</span> + i*T**<span class="tok-num">2</span>
+        den = <span class="tok-num">1</span> + b*T**<span class="tok-num">0.5</span> + d*T + f*T**<span class="tok-num">1.5</span> + h*T**<span class="tok-num">2</span>
+        <span class="tok-kw">return</span> <span class="tok-num">10</span> ** (num / den)
+
+    <span class="tok-kw">elif</span> model == <span class="tok-str">"kevlar"</span>:       <span class="tok-cm"># error-function blend (low/high T regimes)</span>
+        a,b,c,d,e,f = [<span class="tok-fn">float</span>(row[x]) <span class="tok-kw">for</span> x <span class="tok-kw">in</span> [<span class="tok-str">'a'</span>,<span class="tok-str">'b'</span>,<span class="tok-str">'c'</span>,<span class="tok-str">'d'</span>,<span class="tok-str">'e'</span>,<span class="tok-str">'f'</span>]]
+        logT  = <span class="tok-bi">np</span>.log10(T)
+        blend = (<span class="tok-num">1</span> - <span class="tok-fn">erf</span>(<span class="tok-num">2</span>*(logT - c))) / <span class="tok-num">2</span>
+        term1 = (a + b*logT) * blend
+        term2 = (d + e*<span class="tok-bi">np</span>.exp(-logT/f)) * (<span class="tok-num">1</span> - blend)
+        <span class="tok-kw">return</span> <span class="tok-num">10</span> ** (term1 + term2)</pre></div>
+      <p class="code-caption">k(T) model dispatcher. Coefficients are loaded from the material table;
+        adding a new material requires no changes to model code.</p>
+
+      <h3>Heat flow integration and equilibrium solver</h3>
+      <p>
+        Conductive heat flow between two cable ends is computed by numerical integration
+        of k(T) over temperature. The equilibrium condition -- where conduction plus
+        parasitic load equals the cooler's available capacity -- is solved with a
+        bracketed Brent root-finding method. The two-stage solver applies this
+        sequentially, using Stage&nbsp;1 equilibrium temperature as the warm-end
+        boundary for Stage&nbsp;2.
+      </p>
+
+      <div class="code-block"><pre><span class="tok-cm"># Conductive heat load Q = (A/L) * integral(k(T), T_cold, T_hot)</span>
+<span class="tok-kw">def</span> <span class="tok-fn">heat_flow</span>(T_hot, T_cold, A_m2, L_m, row):
+    <span class="tok-kw">if</span> <span class="tok-fn">abs</span>(T_hot - T_cold) &lt; <span class="tok-num">1e-9</span>:
+        <span class="tok-kw">return</span> <span class="tok-num">0.0</span>
+    integral, _ = <span class="tok-bi">quad</span>(<span class="tok-kw">lambda</span> T: <span class="tok-fn">k_of_T</span>(T, row),
+                        T_cold, T_hot, limit=<span class="tok-num">200</span>, epsabs=<span class="tok-num">1e-6</span>)
+    <span class="tok-kw">return</span> (A_m2 / L_m) * integral
+
+<span class="tok-cm"># Equilibrium: Q_conduction(T1) + Q_offset == Q_cooling(T1)</span>
+<span class="tok-cm"># root_scalar (Brent) finds T1 where residual == 0</span>
+<span class="tok-kw">def</span> <span class="tok-fn">residual_stage1</span>(T1, ...):
+    Q_cond   = <span class="tok-fn">heat_flow</span>(T_room, T1, A_eff, L, row)
+    Q_cooler = <span class="tok-fn">get_cooling_power</span>(stage1, T1)
+    <span class="tok-kw">return</span> Q_cond + Q_offset - Q_cooler
+
+T1_eq = <span class="tok-bi">root_scalar</span>(residual_stage1,
+                     bracket=[T_lo, T_hi], method=<span class="tok-str">'brentq'</span>).root</pre></div>
+      <p class="code-caption">Heat flow integration and equilibrium residual. A bracket failure
+        indicates thermal runaway -- no stable operating point exists at that configuration.</p>
+
+      <div class="ip-note">
+        <strong>Code availability:</strong> The full simulation was developed at
+        Forschungszentrum J&uuml;lich and is not publicly hosted. The snippets above
+        show the core methodology only -- k(T) model dispatch and solver structure --
+        based on published NIST material data and standard numerical methods.
+        Institute-specific calibration data are not included here.
       </div>
     </section>
 
@@ -71,62 +229,78 @@
       <div class="skills">
         <span>Python</span>
         <span>NumPy</span>
-        <span>SciPy</span>
+        <span>SciPy (quad, root_scalar, interp1d)</span>
         <span>Matplotlib</span>
+        <span>Pandas</span>
         <span>Jupyter</span>
         <span>Voila</span>
-        <span>Scientific Computing</span>
-        <span>Thermal Modeling</span>
+        <span>ipywidgets</span>
       </div>
     </section>
 
     <section class="section">
       <h2>Key Outputs</h2>
       <ul>
-        <li>Nonlinear temperature profiles across cryogenic cable segments</li>
-        <li>Steady-state operating point analysis under cooling power limits</li>
-        <li>Comparison of conduction behavior and available cooling capacity</li>
-        <li>Structured simulation workflow for parameter studies and future validation</li>
+        <li>
+          Nonlinear equilibrium temperatures (T1, T2) for 36 material/cable-count
+          combinations across N&nbsp;=&nbsp;1--50 cables and six conductor materials
+        </li>
+        <li>
+          Automatic runaway detection: cases where conductive load exceeds available
+          cooling capacity are flagged during the parametric sweep
+        </li>
+        <li>
+          Conduction vs. cooling capacity comparison plots for assessing thermal margins
+          at each cryostat stage
+        </li>
+        <li>
+          Interactive Voila dashboard with live segment configuration, material selection,
+          coupled solver controls, and real-time output plots
+        </li>
+        <li>
+          Structured parametric sweep output (CSV) with pivot tables of T2 and Q2
+          across all material/N combinations, used directly in the thesis analysis
+        </li>
       </ul>
     </section>
 
     <section class="section">
-      <h2>Engineering Relevance</h2>
-      <p>
-        The project demonstrates how physical models can be translated into robust computational tools
-        for engineering analysis. It combines thermal systems understanding, numerical methods, and
-        practical software implementation in a way that is relevant for simulation, R&D, and design-support roles.
-      </p>
+      <h2>Simulation Output</h2>
+
+      <div class="image-block">
+        <img src="../assets/images/cryogenic_dashboard.png"
+             alt="Cryogenic cable simulator Voila dashboard" />
+        <p class="image-caption">
+          Interactive Voila dashboard: segment configuration panel, temperature profiles,
+          k(T) behaviour, solver convergence, and system-level heat flow output.
+        </p>
+      </div>
+
+      <div class="image-block">
+        <img src="../assets/images/temperature_profile.png"
+             alt="Nonlinear temperature profile across cryogenic cable segments" />
+        <p class="image-caption">
+          Nonlinear steady-state temperature profile across cable segments driven by
+          temperature-dependent thermal conductivity. Profile shape varies significantly
+          between materials.
+        </p>
+      </div>
+
+      <div class="image-block">
+        <img src="../assets/images/conduction_cooling.png"
+             alt="Conductive heat load vs cryocooler cooling capacity" />
+        <p class="image-caption">
+          Conductive heat load vs. available cryocooler capacity as a function of stage
+          temperature. The intersection is the equilibrium operating point; no intersection
+          indicates thermal runaway.
+        </p>
+      </div>
     </section>
 
     <section class="section">
-      <h2>Visuals</h2>
-
-      <div class="image-block">
-        <img src="../assets/images/cryogenic_dashboard.png" alt="Cryogenic cable simulator interface" />
-        <p class="image-caption">
-          Integrated simulation output showing temperature profiles, material behavior k(T), solver convergence, and system-level heat flow.
-        </p>
-      </div>
-
-      <div class="image-block">
-        <img src="../assets/images/temperature_profile.png" alt="Temperature profile plot for cryogenic cable system" />
-        <p class="image-caption">
-          Nonlinear temperature profile across cryogenic cable segments driven by temperature-dependent thermal conductivity.
-        </p>
-      </div>
-
-      <div class="image-block">
-        <img src="../assets/images/conduction_cooling.png" alt="Comparison of conduction and cooling behavior" />
-        <p class="image-caption">
-          Comparison of conductive heat load and available cryocooler capacity used to determine realistic operating points.
-        </p>
-      </div>
+      <p><a class="text-link" href="../index.html">&#8592; Back to homepage</a></p>
     </section>
 
-    <section class="section">
-      <p><a class="text-link" href="../index.html">← Back to homepage</a></p>
-    </section>
   </main>
 </body>
 </html>
